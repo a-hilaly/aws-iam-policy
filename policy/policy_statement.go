@@ -145,7 +145,7 @@ func (s *StatementOrSlice) UnmarshalJSON(data []byte) error {
 			return fmt.Errorf("%s: %v", ErrorInvalidStatementOrSlice, err)
 		}
 		s.values = []Statement{value}
-		s.singular = true
+		s.singular = false
 		return nil
 	}
 	return errors.New(ErrorInvalidStatementOrSlice)

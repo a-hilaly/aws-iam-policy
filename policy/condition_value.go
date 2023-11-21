@@ -52,6 +52,34 @@ type ConditionValue struct {
 	singular   bool
 }
 
+func (c *ConditionValue) Equal(other *ConditionValue) bool {
+	if len(c.strValues) != len(other.strValues) {
+		return false
+	}
+	for i, v := range c.strValues {
+		if v != other.strValues[i] {
+			return false
+		}
+	}
+	if len(c.boolValues) != len(other.boolValues) {
+		return false
+	}
+	for i, v := range c.boolValues {
+		if v != other.boolValues[i] {
+			return false
+		}
+	}
+	if len(c.numValues) != len(other.numValues) {
+		return false
+	}
+	for i, v := range c.numValues {
+		if v != other.numValues[i] {
+			return false
+		}
+	}
+	return true
+}
+
 // AddStrings adds a slice of strings to the ConditionValue. If the
 // ConditionValue already has bools or floats, an error is returned.
 func (c *ConditionValue) AddString(values ...string) error {

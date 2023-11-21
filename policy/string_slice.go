@@ -88,3 +88,57 @@ func (s *StringOrSlice) Values() []string {
 func (s *StringOrSlice) IsSingular() bool {
 	return s.singular && len(s.values) <= 1
 }
+
+// Equal returns true if the StringOrSlice is equal to the given StringOrSlice.
+func (s *StringOrSlice) Equal(other *StringOrSlice) bool {
+	if s == nil && other == nil {
+		return true
+	}
+	if other == nil && len(s.values) > 0 {
+		return false
+	}
+	if s == nil && len(other.values) > 0 {
+		return false
+	}
+	return equalStringOrSlices(s.values, other.values)
+}
+
+// Equal returns true if the two string slices are equal.
+func equalStringOrSlices(a, b []string) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i, item := range a {
+		if item != b[i] {
+			return false
+		}
+	}
+	return true
+}
+
+func equalOrderedStringSlices(a, b []string) bool {
+	return equalStringOrSlices(a, b)
+}
+
+func equalNonOrderedStringSlices(a, b []string) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for _, item := range a {
+		// TODO: What about duplicate tiems? do we need
+		// to check them?
+		if !containsString(b, item) {
+			return false
+		}
+	}
+	return true
+}
+
+func containsString(slice []string, item string) bool {
+	for _, s := range slice {
+		if s == item {
+			return true
+		}
+	}
+	return false
+}

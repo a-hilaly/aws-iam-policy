@@ -59,7 +59,7 @@ func (s *StringOrSlice) UnmarshalJSON(data []byte) error {
 	theString, ok := tmp.(string)
 	if ok {
 		s.values = []string{theString}
-		s.singular = true
+		s.singular = false
 		return nil
 	}
 	return errors.New(ErrorInvalidStringOrSlice)

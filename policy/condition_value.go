@@ -106,19 +106,19 @@ func (c *ConditionValue) UnmarshalJSON(data []byte) error {
 	theString, ok := tmp.(string)
 	if ok {
 		c.strValues = []string{theString}
-		c.singular = true
+		c.singular = false
 		return nil
 	}
 	theBool, ok := tmp.(bool)
 	if ok {
 		c.boolValues = []bool{theBool}
-		c.singular = true
+		c.singular = false
 		return nil
 	}
 	theFloat, ok := tmp.(float64)
 	if ok {
 		c.numValues = []float64{theFloat}
-		c.singular = true
+		c.singular = false
 		return nil
 	}
 

@@ -108,6 +108,96 @@ func TestNewPrincipal(t *testing.T) {
 	}
 }
 
+func TestPrincipalEqual(t *testing.T) {
+	cases := []struct {
+		name string
+		a    *Principal
+		b    *Principal
+		want bool
+	}{
+		{
+			name: "BothNil",
+			a:    nil,
+			b:    nil,
+			want: true,
+		},
+		{
+			name: "FirstNil",
+			a:    nil,
+			b:    NewGlobalPrincipal(),
+			want: false,
+		},
+		{
+			name: "SecondNil",
+			a:    NewGlobalPrincipal(),
+			b:    nil,
+			want: false,
+		},
+		{
+			name: "BothGlobal",
+			a:    NewGlobalPrincipal(),
+			b:    NewGlobalPrincipal(),
+			want: true,
+		},
+		{
+			name: "SameAWS",
+			a:    NewAWSPrincipal("111122223333"),
+			b:    NewAWSPrincipal("111122223333"),
+			want: true,
+		},
+		{
+			name: "DifferentAWS",
+			a:    NewAWSPrincipal("111122223333"),
+			b:    NewAWSPrincipal("444455556666"),
+			want: false,
+		},
+		{
+			name: "SameService",
+			a:    NewServicePrincipal("s3.amazonaws.com"),
+			b:    NewServicePrincipal("s3.amazonaws.com"),
+			want: true,
+		},
+		{
+			name: "DifferentService",
+			a:    NewServicePrincipal("s3.amazonaws.com"),
+			b:    NewServicePrincipal("ec2.amazonaws.com"),
+			want: false,
+		},
+		{
+			name: "AWSvsService",
+			a:    NewAWSPrincipal("111122223333"),
+			b:    NewServicePrincipal("s3.amazonaws.com"),
+			want: false,
+		},
+		{
+			name: "GlobalVsAWS",
+			a:    NewGlobalPrincipal(),
+			b:    NewAWSPrincipal("111122223333"),
+			want: false,
+		},
+		{
+			name: "SameFederated",
+			a:    NewFederatedPrincipal("arn:aws:iam::123456789012:oidc-provider/example"),
+			b:    NewFederatedPrincipal("arn:aws:iam::123456789012:oidc-provider/example"),
+			want: true,
+		},
+		{
+			name: "SameCanonicalUser",
+			a:    NewCanonicalUserPrincipal("e01ebb0e"),
+			b:    NewCanonicalUserPrincipal("e01ebb0e"),
+			want: true,
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			got := tc.a.Equal(tc.b)
+			if got != tc.want {
+				t.Errorf("got '%t', want '%t'", got, tc.want)
+			}
+		})
+	}
+}
+
 func TestPrincipalInvalidJSON(t *testing.T) {
 	cases := []struct {
 		name string

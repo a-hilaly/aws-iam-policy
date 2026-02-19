@@ -231,6 +231,164 @@ func TestStatementOrSliceUnmarshalJSON(t *testing.T) {
 	}
 }
 
+func TestStatementEqual(t *testing.T) {
+	cases := []struct {
+		name string
+		a    *Statement
+		b    *Statement
+		want bool
+	}{
+		{
+			name: "BothNil",
+			a:    nil,
+			b:    nil,
+			want: true,
+		},
+		{
+			name: "FirstNil",
+			a:    nil,
+			b:    &Statement{Effect: EffectAllow},
+			want: false,
+		},
+		{
+			name: "SecondNil",
+			a:    &Statement{Effect: EffectAllow},
+			b:    nil,
+			want: false,
+		},
+		{
+			name: "SameSimple",
+			a: &Statement{
+				Effect:   EffectAllow,
+				Action:   NewStringOrSlice(true, "s3:GetObject"),
+				Resource: NewStringOrSlice(true, "arn:aws:s3:::bucket/*"),
+			},
+			b: &Statement{
+				Effect:   EffectAllow,
+				Action:   NewStringOrSlice(true, "s3:GetObject"),
+				Resource: NewStringOrSlice(true, "arn:aws:s3:::bucket/*"),
+			},
+			want: true,
+		},
+		{
+			name: "DifferentEffect",
+			a: &Statement{
+				Effect: EffectAllow,
+				Action: NewStringOrSlice(true, "s3:GetObject"),
+			},
+			b: &Statement{
+				Effect: EffectDeny,
+				Action: NewStringOrSlice(true, "s3:GetObject"),
+			},
+			want: false,
+		},
+		{
+			name: "DifferentSid",
+			a:    &Statement{Effect: EffectAllow, Sid: "1"},
+			b:    &Statement{Effect: EffectAllow, Sid: "2"},
+			want: false,
+		},
+		{
+			name: "DifferentAction",
+			a: &Statement{
+				Effect: EffectAllow,
+				Action: NewStringOrSlice(true, "s3:GetObject"),
+			},
+			b: &Statement{
+				Effect: EffectAllow,
+				Action: NewStringOrSlice(true, "s3:PutObject"),
+			},
+			want: false,
+		},
+		{
+			name: "DifferentPrincipal",
+			a: &Statement{
+				Effect:    EffectAllow,
+				Principal: NewAWSPrincipal("111122223333"),
+			},
+			b: &Statement{
+				Effect:    EffectAllow,
+				Principal: NewServicePrincipal("s3.amazonaws.com"),
+			},
+			want: false,
+		},
+		{
+			name: "WithCondition",
+			a: &Statement{
+				Effect: EffectAllow,
+				Condition: map[string]map[string]*ConditionValue{
+					"StringEquals": {
+						"aws:PrincipalOrgID": NewConditionValueString(true, "o-123456"),
+					},
+				},
+			},
+			b: &Statement{
+				Effect: EffectAllow,
+				Condition: map[string]map[string]*ConditionValue{
+					"StringEquals": {
+						"aws:PrincipalOrgID": NewConditionValueString(true, "o-123456"),
+					},
+				},
+			},
+			want: true,
+		},
+		{
+			name: "DifferentConditionValue",
+			a: &Statement{
+				Effect: EffectAllow,
+				Condition: map[string]map[string]*ConditionValue{
+					"StringEquals": {
+						"aws:PrincipalOrgID": NewConditionValueString(true, "o-111111"),
+					},
+				},
+			},
+			b: &Statement{
+				Effect: EffectAllow,
+				Condition: map[string]map[string]*ConditionValue{
+					"StringEquals": {
+						"aws:PrincipalOrgID": NewConditionValueString(true, "o-222222"),
+					},
+				},
+			},
+			want: false,
+		},
+		{
+			name: "DifferentConditionKey",
+			a: &Statement{
+				Effect: EffectAllow,
+				Condition: map[string]map[string]*ConditionValue{
+					"StringEquals": {
+						"aws:PrincipalOrgID": NewConditionValueString(true, "o-123456"),
+					},
+				},
+			},
+			b: &Statement{
+				Effect: EffectAllow,
+				Condition: map[string]map[string]*ConditionValue{
+					"StringLike": {
+						"aws:PrincipalOrgID": NewConditionValueString(true, "o-123456"),
+					},
+				},
+			},
+			want: false,
+		},
+		{
+			name: "NilConditionVsEmpty",
+			a:    &Statement{Effect: EffectAllow, Condition: nil},
+			b:    &Statement{Effect: EffectAllow, Condition: map[string]map[string]*ConditionValue{}},
+			want: true,
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			got := tc.a.Equal(tc.b)
+			if got != tc.want {
+				t.Errorf("got '%t', want '%t'", got, tc.want)
+			}
+		})
+	}
+}
+
 func TestStatementOrSliceMarshalJSON(t *testing.T) {
 	cases := []struct {
 		name         string

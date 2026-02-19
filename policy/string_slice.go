@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"slices"
 	"strings"
 )
 
@@ -87,4 +88,18 @@ func (s *StringOrSlice) Values() []string {
 // or one value.
 func (s *StringOrSlice) IsSingular() bool {
 	return s.singular && len(s.values) <= 1
+}
+
+// Equal returns true if the StringOrSlice is equal to the given StringOrSlice.
+func (s *StringOrSlice) Equal(other *StringOrSlice) bool {
+	if s == nil && other == nil {
+		return true
+	}
+	if s == nil {
+		return len(other.values) == 0
+	}
+	if other == nil {
+		return len(s.values) == 0
+	}
+	return slices.Equal(s.values, other.values)
 }

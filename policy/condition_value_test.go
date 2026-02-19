@@ -234,6 +234,96 @@ func TestConditionValueValues(t *testing.T) {
 	}
 }
 
+func TestConditionValueEqual(t *testing.T) {
+	cases := []struct {
+		name string
+		a    *ConditionValue
+		b    *ConditionValue
+		want bool
+	}{
+		{
+			name: "EqualStrings",
+			a:    NewConditionValueString(true, "foo"),
+			b:    NewConditionValueString(true, "foo"),
+			want: true,
+		},
+		{
+			name: "DifferentStrings",
+			a:    NewConditionValueString(true, "foo"),
+			b:    NewConditionValueString(true, "bar"),
+			want: false,
+		},
+		{
+			name: "EqualBools",
+			a:    NewConditionValueBool(false, true, false),
+			b:    NewConditionValueBool(false, true, false),
+			want: true,
+		},
+		{
+			name: "DifferentBools",
+			a:    NewConditionValueBool(true, true),
+			b:    NewConditionValueBool(true, false),
+			want: false,
+		},
+		{
+			name: "EqualFloats",
+			a:    NewConditionValueFloat(false, 1.0, 2.0),
+			b:    NewConditionValueFloat(false, 1.0, 2.0),
+			want: true,
+		},
+		{
+			name: "DifferentFloats",
+			a:    NewConditionValueFloat(true, 1.0),
+			b:    NewConditionValueFloat(true, 2.0),
+			want: false,
+		},
+		{
+			name: "StringVsBool",
+			a:    NewConditionValueString(true, "true"),
+			b:    NewConditionValueBool(true, true),
+			want: false,
+		},
+		{
+			name: "DifferentLengthStrings",
+			a:    NewConditionValueString(false, "a", "b"),
+			b:    NewConditionValueString(true, "a"),
+			want: false,
+		},
+		{
+			name: "BothEmpty",
+			a:    &ConditionValue{},
+			b:    &ConditionValue{},
+			want: true,
+		},
+		{
+			name: "SingularStringEqualSliceString",
+			a:    NewConditionValueString(true, "foo"),
+			b:    NewConditionValueString(false, "foo"),
+			want: true,
+		},
+		{
+			name: "SingularBoolEqualSliceBool",
+			a:    NewConditionValueBool(true, true),
+			b:    NewConditionValueBool(false, true),
+			want: true,
+		},
+		{
+			name: "SingularFloatEqualSliceFloat",
+			a:    NewConditionValueFloat(true, 1.0),
+			b:    NewConditionValueFloat(false, 1.0),
+			want: true,
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			got := tc.a.Equal(tc.b)
+			if got != tc.want {
+				t.Errorf("got '%t', want '%t'", got, tc.want)
+			}
+		})
+	}
+}
+
 func TestConditionValueAdd(t *testing.T) {
 	cases := []struct {
 		name     string

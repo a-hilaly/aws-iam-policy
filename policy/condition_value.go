@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"slices"
 	"strings"
 )
 
@@ -50,6 +51,13 @@ type ConditionValue struct {
 	boolValues []bool
 	numValues  []float64
 	singular   bool
+}
+
+// Equal returns true if the ConditionValue is equal to the other ConditionValue.
+func (c *ConditionValue) Equal(other *ConditionValue) bool {
+	return slices.Equal(c.strValues, other.strValues) &&
+		slices.Equal(c.boolValues, other.boolValues) &&
+		slices.Equal(c.numValues, other.numValues)
 }
 
 // AddStrings adds a slice of strings to the ConditionValue. If the

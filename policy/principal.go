@@ -18,6 +18,21 @@ type Principal struct {
 	str       string
 }
 
+// Equal returns true if the Principal is equal to the other Principal.
+func (p *Principal) Equal(other *Principal) bool {
+	if p == nil && other == nil {
+		return true
+	}
+	if p == nil || other == nil {
+		return false
+	}
+
+	if p.str != other.str {
+		return false
+	}
+	return p.principal.Equal(other.principal)
+}
+
 // AddService adds one or more services to the Principal.
 func (p *Principal) AddService(service ...string) {
 	if p.principal == nil {
@@ -212,4 +227,17 @@ func (p *principal) AddService(service ...string) {
 		return
 	}
 	p.Service.Add(service...)
+}
+
+func (p *principal) Equal(other *principal) bool {
+	if p == nil && other == nil {
+		return true
+	}
+	if p == nil || other == nil {
+		return false
+	}
+	return p.AWS.Equal(other.AWS) &&
+		p.CanonicalUser.Equal(other.CanonicalUser) &&
+		p.Federated.Equal(other.Federated) &&
+		p.Service.Equal(other.Service)
 }

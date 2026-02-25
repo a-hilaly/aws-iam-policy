@@ -132,6 +132,96 @@ func TestInvalidStringSliceJSON(t *testing.T) {
 	}
 }
 
+func TestStringOrSliceEqual(t *testing.T) {
+	cases := []struct {
+		name string
+		a    *StringOrSlice
+		b    *StringOrSlice
+		want bool
+	}{
+		{
+			name: "BothNil",
+			a:    nil,
+			b:    nil,
+			want: true,
+		},
+		{
+			name: "FirstNilSecondEmpty",
+			a:    nil,
+			b:    NewStringOrSlice(false),
+			want: true,
+		},
+		{
+			name: "FirstEmptySecondNil",
+			a:    NewStringOrSlice(false),
+			b:    nil,
+			want: true,
+		},
+		{
+			name: "FirstNilSecondNonEmpty",
+			a:    nil,
+			b:    NewStringOrSlice(true, "foo"),
+			want: false,
+		},
+		{
+			name: "FirstNonEmptySecondNil",
+			a:    NewStringOrSlice(true, "foo"),
+			b:    nil,
+			want: false,
+		},
+		{
+			name: "EqualSingular",
+			a:    NewStringOrSlice(true, "s3:GetObject"),
+			b:    NewStringOrSlice(true, "s3:GetObject"),
+			want: true,
+		},
+		{
+			name: "EqualSlice",
+			a:    NewStringOrSlice(false, "s3:GetObject", "s3:PutObject"),
+			b:    NewStringOrSlice(false, "s3:GetObject", "s3:PutObject"),
+			want: true,
+		},
+		{
+			name: "DifferentValues",
+			a:    NewStringOrSlice(true, "s3:GetObject"),
+			b:    NewStringOrSlice(true, "s3:PutObject"),
+			want: false,
+		},
+		{
+			name: "DifferentLength",
+			a:    NewStringOrSlice(false, "s3:GetObject"),
+			b:    NewStringOrSlice(false, "s3:GetObject", "s3:PutObject"),
+			want: false,
+		},
+		{
+			name: "BothEmpty",
+			a:    NewStringOrSlice(false),
+			b:    NewStringOrSlice(false),
+			want: true,
+		},
+		{
+			name: "DifferentOrder",
+			a:    NewStringOrSlice(false, "a", "b"),
+			b:    NewStringOrSlice(false, "b", "a"),
+			want: false,
+		},
+		{
+			name: "SingularEqualSlice",
+			a:    NewStringOrSlice(true, "s3:GetObject"),
+			b:    NewStringOrSlice(false, "s3:GetObject"),
+			want: true,
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			got := tc.a.Equal(tc.b)
+			if got != tc.want {
+				t.Errorf("got '%t', want '%t'", got, tc.want)
+			}
+		})
+	}
+}
+
 func TestStringOrSliceAdd(t *testing.T) {
 	cases := []struct {
 		name string

@@ -42,6 +42,48 @@ type Statement struct {
 	Sid          string                                `json:"Sid,omitempty"`
 }
 
+func equalCondition(a, b map[string]map[string]*ConditionValue) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for k1, v1 := range a {
+		// check if the key exists in b and if the values have the same length. If
+		// the length is different, drop out early.
+		v1b, ok := b[k1]
+		if !ok || len(v1b) != len(v1) {
+			return false
+		}
+		// now the length is the same, check if the values are the same.
+		for k2, v2 := range v1 {
+			v2b, ok := v1b[k2]
+			if !ok || !v2.Equal(v2b) {
+				return false
+			}
+		}
+	}
+	return true
+}
+
+// Equal returns true if the Statement is equal to the other Statement.
+func (s *Statement) Equal(other *Statement) bool {
+	if s == nil || other == nil {
+		return s == other
+	}
+
+	// check simple string fields first
+	if s.Effect != other.Effect || s.Sid != other.Sid {
+		return false
+	}
+
+	return s.Action.Equal(other.Action) &&
+		s.NotAction.Equal(other.NotAction) &&
+		s.NotResource.Equal(other.NotResource) &&
+		s.Principal.Equal(other.Principal) &&
+		s.NotPrincipal.Equal(other.NotPrincipal) &&
+		s.Resource.Equal(other.Resource) &&
+		equalCondition(s.Condition, other.Condition)
+}
+
 // StatementOrSlice represents Statements that can be marshaled to a single Statement or a slice of Statements.
 type StatementOrSlice struct {
 	values   []Statement

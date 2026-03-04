@@ -29,6 +29,18 @@ type Policy struct {
 	Version    string            `json:"Version"`
 }
 
+// Equal returns true if the Policy is equal to the other Policy.
+// Statement order is ignored when comparing.
+func (p *Policy) Equal(other *Policy) bool {
+	if p == nil || other == nil {
+		return p == other
+	}
+	if p.Id != other.Id || p.Version != other.Version {
+		return false
+	}
+	return p.Statements.Equal(other.Statements)
+}
+
 // Statement is a single statement in a policy document.
 type Statement struct {
 	Action       *StringOrSlice                        `json:"Action,omitempty"`
@@ -172,4 +184,32 @@ func (s *StatementOrSlice) Values() []Statement {
 // Singular returns true if the StatementOrSlice is a single Statement.
 func (s *StatementOrSlice) Singular() bool {
 	return s.singular
+}
+
+// Equal returns true if the StatementOrSlice is equal to the other StatementOrSlice.
+// Statement order is ignored when comparing.
+func (s *StatementOrSlice) Equal(other *StatementOrSlice) bool {
+	if s == nil || other == nil {
+		return s == other
+	}
+	if len(s.values) != len(other.values) {
+		return false
+	}
+	// Order-independent comparison: each statement in s must match
+	// exactly one statement in other
+	used := make([]bool, len(other.values))
+	for _, stmtA := range s.values {
+		found := false
+		for j, stmtB := range other.values {
+			if !used[j] && stmtA.Equal(&stmtB) {
+				used[j] = true
+				found = true
+				break
+			}
+		}
+		if !found {
+			return false
+		}
+	}
+	return true
 }

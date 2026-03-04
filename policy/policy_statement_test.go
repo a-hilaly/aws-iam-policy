@@ -378,6 +378,29 @@ func TestStatementEqual(t *testing.T) {
 			b:    &Statement{Effect: EffectAllow, Condition: map[string]map[string]*ConditionValue{}},
 			want: true,
 		},
+		{
+			name: "DifferentConditionLength",
+			a: &Statement{
+				Effect: EffectAllow,
+				Condition: map[string]map[string]*ConditionValue{
+					"StringEquals": {
+						"aws:PrincipalOrgID": NewConditionValueString(true, "o-123456"),
+					},
+					"Bool": {
+						"aws:SecureTransport": NewConditionValueString(true, "true"),
+					},
+				},
+			},
+			b: &Statement{
+				Effect: EffectAllow,
+				Condition: map[string]map[string]*ConditionValue{
+					"StringEquals": {
+						"aws:PrincipalOrgID": NewConditionValueString(true, "o-123456"),
+					},
+				},
+			},
+			want: false,
+		},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -428,6 +451,221 @@ func TestStatementOrSliceMarshalJSON(t *testing.T) {
 			}
 			if tc.wantSingular != tc.in.Singular() {
 				t.Errorf("got '%t', want '%t'", tc.in.Singular(), tc.wantSingular)
+			}
+		})
+	}
+}
+
+func TestStatementOrSliceEqual(t *testing.T) {
+	cases := []struct {
+		name string
+		a    *StatementOrSlice
+		b    *StatementOrSlice
+		want bool
+	}{
+		{
+			name: "BothNil",
+			a:    nil,
+			b:    nil,
+			want: true,
+		},
+		{
+			name: "FirstNil",
+			a:    nil,
+			b:    NewStatementOrSlice(Statement{Effect: EffectAllow}),
+			want: false,
+		},
+		{
+			name: "SecondNil",
+			a:    NewStatementOrSlice(Statement{Effect: EffectAllow}),
+			b:    nil,
+			want: false,
+		},
+		{
+			name: "SameStatements",
+			a: NewStatementOrSlice(
+				Statement{Effect: EffectAllow, Action: NewStringOrSlice(true, "s3:GetObject")},
+			),
+			b: NewStatementOrSlice(
+				Statement{Effect: EffectAllow, Action: NewStringOrSlice(true, "s3:GetObject")},
+			),
+			want: true,
+		},
+		{
+			name: "DifferentOrder",
+			a: NewStatementOrSlice(
+				Statement{Sid: "1", Effect: EffectAllow},
+				Statement{Sid: "2", Effect: EffectDeny},
+			),
+			b: NewStatementOrSlice(
+				Statement{Sid: "2", Effect: EffectDeny},
+				Statement{Sid: "1", Effect: EffectAllow},
+			),
+			want: true,
+		},
+		{
+			name: "DifferentLength",
+			a: NewStatementOrSlice(
+				Statement{Effect: EffectAllow},
+			),
+			b: NewStatementOrSlice(
+				Statement{Effect: EffectAllow},
+				Statement{Effect: EffectDeny},
+			),
+			want: false,
+		},
+		{
+			name: "DifferentStatements",
+			a: NewStatementOrSlice(
+				Statement{Effect: EffectAllow, Action: NewStringOrSlice(true, "s3:GetObject")},
+			),
+			b: NewStatementOrSlice(
+				Statement{Effect: EffectAllow, Action: NewStringOrSlice(true, "s3:PutObject")},
+			),
+			want: false,
+		},
+		{
+			name: "DuplicateStatements",
+			a: NewStatementOrSlice(
+				Statement{Sid: "1", Effect: EffectAllow},
+				Statement{Sid: "1", Effect: EffectAllow},
+			),
+			b: NewStatementOrSlice(
+				Statement{Sid: "1", Effect: EffectAllow},
+				Statement{Sid: "1", Effect: EffectAllow},
+			),
+			want: true,
+		},
+		{
+			name: "DuplicateVsUnique",
+			a: NewStatementOrSlice(
+				Statement{Sid: "1", Effect: EffectAllow},
+				Statement{Sid: "1", Effect: EffectAllow},
+			),
+			b: NewStatementOrSlice(
+				Statement{Sid: "1", Effect: EffectAllow},
+				Statement{Sid: "2", Effect: EffectAllow},
+			),
+			want: false,
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			got := tc.a.Equal(tc.b)
+			if got != tc.want {
+				t.Errorf("got '%t', want '%t'", got, tc.want)
+			}
+		})
+	}
+}
+
+func TestPolicyEqual(t *testing.T) {
+	cases := []struct {
+		name string
+		a    *Policy
+		b    *Policy
+		want bool
+	}{
+		{
+			name: "BothNil",
+			a:    nil,
+			b:    nil,
+			want: true,
+		},
+		{
+			name: "FirstNil",
+			a:    nil,
+			b:    &Policy{Version: VersionLatest},
+			want: false,
+		},
+		{
+			name: "SecondNil",
+			a:    &Policy{Version: VersionLatest},
+			b:    nil,
+			want: false,
+		},
+		{
+			name: "SamePolicy",
+			a: &Policy{
+				Version: VersionLatest,
+				Statements: NewStatementOrSlice(
+					Statement{Effect: EffectAllow, Action: NewStringOrSlice(true, "s3:GetObject")},
+				),
+			},
+			b: &Policy{
+				Version: VersionLatest,
+				Statements: NewStatementOrSlice(
+					Statement{Effect: EffectAllow, Action: NewStringOrSlice(true, "s3:GetObject")},
+				),
+			},
+			want: true,
+		},
+		{
+			name: "DifferentVersion",
+			a: &Policy{
+				Version:    Version2012_10_17,
+				Statements: NewStatementOrSlice(Statement{Effect: EffectAllow}),
+			},
+			b: &Policy{
+				Version:    Version2008_10_17,
+				Statements: NewStatementOrSlice(Statement{Effect: EffectAllow}),
+			},
+			want: false,
+		},
+		{
+			name: "DifferentId",
+			a: &Policy{
+				Id:         "policy-1",
+				Version:    VersionLatest,
+				Statements: NewStatementOrSlice(Statement{Effect: EffectAllow}),
+			},
+			b: &Policy{
+				Id:         "policy-2",
+				Version:    VersionLatest,
+				Statements: NewStatementOrSlice(Statement{Effect: EffectAllow}),
+			},
+			want: false,
+		},
+		{
+			name: "StatementsInDifferentOrder",
+			a: &Policy{
+				Version: VersionLatest,
+				Statements: NewStatementOrSlice(
+					Statement{Sid: "1", Effect: EffectAllow},
+					Statement{Sid: "2", Effect: EffectDeny},
+				),
+			},
+			b: &Policy{
+				Version: VersionLatest,
+				Statements: NewStatementOrSlice(
+					Statement{Sid: "2", Effect: EffectDeny},
+					Statement{Sid: "1", Effect: EffectAllow},
+				),
+			},
+			want: true,
+		},
+		{
+			name: "DifferentStatements",
+			a: &Policy{
+				Version: VersionLatest,
+				Statements: NewStatementOrSlice(
+					Statement{Effect: EffectAllow, Action: NewStringOrSlice(true, "s3:GetObject")},
+				),
+			},
+			b: &Policy{
+				Version: VersionLatest,
+				Statements: NewStatementOrSlice(
+					Statement{Effect: EffectAllow, Action: NewStringOrSlice(true, "s3:PutObject")},
+				),
+			},
+			want: false,
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			got := tc.a.Equal(tc.b)
+			if got != tc.want {
+				t.Errorf("got '%t', want '%t'", got, tc.want)
 			}
 		})
 	}

@@ -187,6 +187,12 @@ func TestPrincipalEqual(t *testing.T) {
 			b:    NewCanonicalUserPrincipal("e01ebb0e"),
 			want: true,
 		},
+		{
+			name: "NilPrincipalVsNonNil",
+			a:    &Principal{principal: nil},
+			b:    &Principal{principal: &principal{AWS: NewStringOrSlice(true, "111122223333")}},
+			want: false,
+		},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
